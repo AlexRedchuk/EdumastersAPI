@@ -182,32 +182,21 @@ router.put('/newPassword', async (req, res) => {
 router.post(
     '/register',
     [
-        upload.single('photo'),
         check('email', 'Incorrect email').isEmail(),
         check('password', 'Minimum password length is 6').isLength({ min: 6 })
     ],
     async (req, res) => {
         try {
-            const errors = validationResult(req);
-            if (!errors.isEmpty()) {
-                unlinkAsync(req.file.path);
-                return res.status(400).json({
-                    errors: errors.array(),
-                    message: 'Incorrect registration data'
-                })
-            }
+        
             const {email, password} = req.body;
             
-            const url = req.protocol + '://' + req.get('host');
-            const photoUrl = url + '/uploads/' + req.file.filename;
             const hashedPassword = await bcrypt.hash(password, 12);
             const id = Types.ObjectId();
             const obj = {
                 _id: id,
                 name: req.body.name,
                 email: req.body.email,
-                password: hashedPassword,
-                photo: photoUrl,
+                password: hashedPassword
             }
             const candidate = await User.findOne({ email })
 
@@ -235,7 +224,6 @@ router.post(
                 .send(msg)
                 .then(() => {}, error => {
                     console.error(error);
-
                     if (error.response) {
                         console.error(error.response.body)
                     }
@@ -322,7 +310,7 @@ router.put('/update', auth, upload.single('photo'), async (req, res) => {
         const updateData = {
             name: req.body.name,
             email: req.body.email,
-            password: user.password,
+            nickname: req.body.nickname,
             photo: photo,
         }
         await User.updateOne({
