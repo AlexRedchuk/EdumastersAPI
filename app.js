@@ -10,8 +10,12 @@ const app = express();
 app.use(express.urlencoded({extended: true}));
 app.use(cors());
 app.use(express.json());
+app.use(require('./routes/image.routes'));
 app.use('/uploads', express.static('uploads'))
 app.use('/api/user', require('./routes/user.routes'));
+app.use('/api/category', require('./routes/categories.routes'));
+app.use('/api/test', require('./routes/test.routes'));
+app.use('/api/testResult', auth, require('./routes/testResults.routes'));
 const PORT = process.env.PORT || 8080;
 const MongoURI = process.env.MONGO_URI;
 

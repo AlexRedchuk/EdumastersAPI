@@ -1,6 +1,8 @@
 FROM node
 WORKDIR /app
-COPY package.json /app
-RUN npm install
+COPY package*.json /app
+RUN npm ci --only=production && npm cache clean --force
 COPY . /app
-RUN ["npm", "start"]
+
+EXPOSE 8080
+CMD [ "node", "app.js" ]

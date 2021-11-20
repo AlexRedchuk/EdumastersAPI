@@ -14,6 +14,8 @@ require('dotenv').config();
 const { Types } = require('mongoose');
 const unlinkAsync = promisify(fs.unlink);
 const sgMail = require('@sendgrid/mail');
+const { uploadFile, deleteFileStream } = require('../utils/s3');
+
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -187,7 +189,6 @@ router.post(
     ],
     async (req, res) => {
         try {
-        
             const {email, password} = req.body;
             
             const hashedPassword = await bcrypt.hash(password, 12);
@@ -195,6 +196,7 @@ router.post(
             const obj = {
                 _id: id,
                 name: req.body.name,
+                surname: req.body.surname,
                 email: req.body.email,
                 password: hashedPassword
             }
@@ -204,33 +206,33 @@ router.post(
                 return res.status(400).json({ message: 'Email is already in use' })
             }
 
-            const secret = process.env.JWT_EMAIL_SECRET
-            const token = jwt.sign(
-                { userId: id },
-                secret,
-                { expiresIn: '3600s' }
-            );
+            // const secret = process.env.JWT_EMAIL_SECRET
+            // const token = jwt.sign(
+            //     { userId: id },
+            //     secret,
+            //     { expiresIn: '3600s' }
+            // );
             
             const user = new User(obj);
-            const msg = {
-                to: obj.email,
-                from: 'edumasters.team@gmail.com', // Use the email address or domain you verified above
-                subject: 'Email confirmation',
-                text: 'Thank you for registration!',
-                html: `<h3>Please <a href="${process.env.BASE_URL}/api/user/confirmEmail/${token}">verify your email </a></h3>`,
-            };
+            // const msg = {
+            //     to: obj.email,
+            //     from: 'edumasters.team@gmail.com', // Use the email address or domain you verified above
+            //     subject: 'Email confirmation',
+            //     text: 'Thank you for registration!',
+            //     html: `<h3>Please <a href="${process.env.BASE_URL}/api/user/confirmEmail/${token}">verify your email </a></h3>`,
+            // };
 
-            sgMail
-                .send(msg)
-                .then(() => {}, error => {
-                    console.error(error);
-                    if (error.response) {
-                        console.error(error.response.body)
-                    }
-                    return res.status(500).json({
-                        message: "Email sending error"
-                    });
-                });
+            // sgMail
+            //     .send(msg)
+            //     .then(() => {}, error => {
+            //         console.error(error);
+            //         if (error.response) {
+            //             console.error(error.response.body)
+            //         }
+            //         return res.status(500).json({
+            //             message: "Email sending error"
+            //         });
+            //     });
             await user.save();
             res.status(201).json(req.body);
         } catch (e) {
@@ -242,6 +244,7 @@ router.post(
 
 
     });
+
 
 router.post(
     '/login',
@@ -301,15 +304,19 @@ router.put('/update', auth, upload.single('photo'), async (req, res) => {
         const userId = decodeUserId(token, process.env.JWT_SECRET);
         const user = await User.findById(userId);
         let photo = user.photo;
-        if(req.file) {
-            const url = req.protocol + '://' + req.get('host') + '/uploads/';
-            const photoToDelete = photo.replace(url, 'uploads\\');
-            unlinkAsync(photoToDelete);
-            photo = url + req.file.filename;
+        if(photo) {
+            await deleteFileStream(photo.replace('/images/', ""));
         }
+        if(req.file) {
+            const uploadResult = await uploadFile(req.file);
+            photo =  req.protocol + '://' + req.get('host') + '/images/' + uploadResult.Key;
+            await unlinkAsync(req.file.path);
+        }
+
         const updateData = {
-            name: req.body.name,
-            email: req.body.email,
+            name: req.body.name || user.name,
+            surname: req.body.surname || user.surname,
+            email: req.body.email || user.email,
             nickname: req.body.nickname,
             photo: photo,
         }
@@ -317,6 +324,29 @@ router.put('/update', auth, upload.single('photo'), async (req, res) => {
             _id: user.id
         }, updateData)
         res.status(201).json(updateData);
+    } catch(e) {
+        console.log(e);
+        res.status(500).json({
+            message: "Something went wrong, try later"
+        })
+    }
+})
+
+router.put('/changePassword', auth, async (req, res) => {
+    try {
+        const token = req.headers.authorization.split(' ')[1];
+        const userId = decodeUserId(token, process.env.JWT_SECRET);
+        const user = await User.findById(userId);
+        const hashedPassword = await bcrypt.hash(req.body.newPassword, 12);
+        const updateData = {
+            password: hashedPassword
+        }
+        await User.updateOne({
+            _id: user.id
+        }, updateData)
+        res.status(201).json({
+            message: "Password successfully updated"
+        });
     } catch(e) {
         console.log(e);
         res.status(500).json({
