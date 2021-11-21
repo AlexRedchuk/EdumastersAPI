@@ -4,6 +4,7 @@ const Answer = require('../models/Answer');
 const Question = require('../models/Question');
 const Test = require('../models/Test');
 const mongoose = require('mongoose');
+const _ = require('lodash');
 
 // api/test/add
 router.post(
@@ -40,7 +41,7 @@ router.post(
                    return next(error)
                 }
             });
-            grand_total = question.mark;
+            grand_total += question.mark;
             questionIds.push(id);
         });
         await Test.create({
@@ -100,17 +101,17 @@ router.get('/get', async (req, res) => {
 router.get('/getFiltered', async (req, res) => {
     try {
         const { pageSize, page, categoryId, searchWord } = req.query;
-        const difficulties = JSON.parse(req.query.difficulties);
+        const difficulties = req.query.difficulties ? JSON.parse(req.query.difficulties) : null;
         let data = null;
         if(categoryId) {
             data = await Test.find(
                 {
                     $and: [
                         {
-                            "name" : {$regex :".*" + searchWord ? searchWord :  '' + ".*", $options: 'i' }
+                            "name" : {$regex : `.*${searchWord ? searchWord : ''}.*`, $options: 'i' }
                         },
                         {
-                            "difficulty": { $in: difficulties.length ? difficulties : [1, 2, 3, 4, 5] }
+                            "difficulty": { $in: !_.isEmpty(difficulties) ? difficulties : [1, 2, 3, 4, 5] }
                         },
                         {
                             "category": categoryId
@@ -136,10 +137,10 @@ router.get('/getFiltered', async (req, res) => {
                 {
                     $and: [
                         {
-                            "name" : {$regex :".*" + searchWord ? searchWord :  '' + ".*", $options: 'i' }
+                            "name" : {$regex : `.*${searchWord ? searchWord : ''}.*`, $options: 'i' }
                         },
                         {
-                            "difficulty": { $in: difficulties.length ? difficulties : [1, 2, 3, 4, 5] }
+                            "difficulty": { $in: !_.isEmpty(difficulties) ? difficulties : [1, 2, 3, 4, 5] }
                         }
                     ]
                 }
@@ -159,9 +160,9 @@ router.get('/getFiltered', async (req, res) => {
         }
         const response = {
             items: data,
-            total: data.length,
             page_info: {
                 totalPages: Math.trunc(data.length / pageSize) + 1,
+                pageSize: pageSize,
                 currentPage: page
             }
         }
