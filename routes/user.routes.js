@@ -262,11 +262,11 @@ router.post(
             
             const user = await User.findOne({ email });
             if (!user) {
-                return res.status(400).json({ message: 'Wrong credentials e' })
+                return res.status(400).json({ message: 'Wrong credentials' })
             }
             const isMatch = await bcrypt.compare(password, user.password);
             if (!isMatch) {
-                return res.status(400).json({ message: 'Wrong credentials p' })
+                return res.status(400).json({ message: 'Wrong credentials' })
             }
             if(!user.isConfirmed) {
                 return res.status(400).json({ message: 'Confirm your email' })
@@ -300,6 +300,7 @@ router.put('/update', auth, upload.single('photo'), async (req, res) => {
                 message: 'Incorrect update data'
             })
         }
+        console.log(req.file);
         const token = req.headers.authorization.split(' ')[1];
         const userId = decodeUserId(token, process.env.JWT_SECRET);
         const user = await User.findById(userId);

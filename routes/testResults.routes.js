@@ -134,7 +134,10 @@ router.get('/getFilteredByUser', async (req, res) => {
                 ]
             }
             
-        ).limit(parseInt(pageSize)).skip(parseInt(page-1) * parseInt(pageSize));
+        ).populate({
+            path: 'testResultSummary.category',
+            model: 'Categories'
+        }).limit(parseInt(pageSize)).skip(parseInt(page-1) * parseInt(pageSize));
     }
     else {
         data = await TestResults.find(
@@ -152,7 +155,10 @@ router.get('/getFilteredByUser', async (req, res) => {
                 ]
             }
             
-        ).limit(parseInt(pageSize)).skip(parseInt(page-1) * parseInt(pageSize));
+        ).populate({
+            path: 'testResultSummary.category',
+            model: 'Categories'
+        }).limit(parseInt(pageSize)).skip(parseInt(page-1) * parseInt(pageSize));
     }
     const response = {
         items: data,

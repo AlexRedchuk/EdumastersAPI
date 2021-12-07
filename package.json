@@ -26,6 +26,9 @@
     "mongoose": "^5.12.13",
     "multer": "^1.4.2",
     "path": "^0.12.7",
+    "swagger-jsdoc": "^6.1.0",
+    "swagger-ui-express": "^4.1.6",
+    "swagger2": "^3.0.0",
     "uuid": "^8.3.2"
   },
   "devDependencies": {

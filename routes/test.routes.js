@@ -4,15 +4,20 @@ const Answer = require('../models/Answer');
 const Question = require('../models/Question');
 const Test = require('../models/Test');
 const mongoose = require('mongoose');
+const auth = require('../middlewares/auth');
+const decodeUserId = require('../utils/decodeToken');
 const _ = require('lodash');
 
 // api/test/add
 router.post(
     '/add',
+    auth,
     async (req, res, next) => {
     try {
         const { questions } = req.body;
         const questionIds = [];
+        const token = req.headers.authorization.split(' ')[1];
+        const userId = decodeUserId(token);
         let grand_total = 0;
         await questions.forEach(async question => {
             const { answers } = question;
@@ -48,7 +53,7 @@ router.post(
             name: req.body.name,
             category: req.body.category,
             difficulty: req.body.difficulty,
-            owner: req.body.owner,
+            owner: userId,
             questions: await questionIds,
             grand_total: await grand_total
         }, (error, data) => {
