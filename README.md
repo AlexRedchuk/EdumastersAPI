@@ -7,7 +7,7 @@ You need node, npm, VSCode.
 
 ## Base technologies stack
 
-NodeJS - front-end library
+NodeJS - backend framework
 Javascript - programming language
 
 ## Dependencies:
